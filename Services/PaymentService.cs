@@ -97,15 +97,20 @@ public class PaymentService
                 : referenceNumber.Trim()
         };
 
-        int paymentId = _paymentRepository.Add(payment);
-
         decimal totalPaid = alreadyPaid + amount;
 
         string newStatus = totalPaid >= bill.TotalAmount
             ? "Paid"
             : "PartiallyPaid";
 
-        _billingRepository.UpdateStatus(billId, newStatus);
+        int paymentId = _paymentRepository.AddAndUpdateBillStatus(
+            payment,
+            newStatus);
+
+        return paymentId;
+
+
+        //_billingRepository.UpdateStatus(billId, newStatus);
 
         return paymentId;
     }

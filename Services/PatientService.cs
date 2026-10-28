@@ -48,7 +48,15 @@ public class PatientService
             ? null
             : patient.Address.Trim();
 
-        return _repository.Add(patient);
+        int patientId = _repository.Add(patient);
+
+        new AuditLogService().LogAction(
+            "Patient",
+            patientId,
+            "Created",
+            $"Registered patient: {patient.FullName}");
+
+        return patientId;
     }
 
     // 4. Update patient details
@@ -89,19 +97,35 @@ public class PatientService
 
         patient.RegisteredAt = existing.RegisteredAt;
 
-        return _repository.Update(patient);
+        bool updated = _repository.Update(patient);
+
+        if (updated)
+        {
+            new AuditLogService().LogAction(
+                "Patient",
+                patient.PatientId,
+                "Updated",
+                $"Updated patient: {patient.FullName}");
+        }
+
+        return updated;
     }
 
     // 5. Deactivate a patient
     public bool DeactivatePatient(int patientId)
     {
-        if (patientId <= 0)
+        bool deactivated = _repository.Deactivate(patientId);
+
+        if (deactivated)
         {
-            throw new ArgumentException(
-                "Patient ID must be greater than zero.");
+            new AuditLogService().LogAction(
+                "Patient",
+                patientId,
+                "Deactivated",
+                "Patient was deactivated.");
         }
 
-        return _repository.Deactivate(patientId);
+        return deactivated;
     }
 
     // Validate required patient details
