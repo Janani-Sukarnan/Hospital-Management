@@ -14,6 +14,7 @@ internal class Program
     private static readonly BillingService BillingService = new();
     private static readonly PaymentService PaymentService = new();
     private static readonly AuditLogService AuditLogService = new();
+    private static readonly ReportService ReportService = new();
     private static void Main()
     {
         while (true)
@@ -73,9 +74,7 @@ internal class Program
                         break;
 
                     case "9":
-                        Console.WriteLine(
-                            "Reports menu will be connected next.");
-                        Pause();
+                        ReportsMenu();
                         break;
 
                     case "0":
@@ -1511,6 +1510,121 @@ internal class Program
             string.IsNullOrWhiteSpace(details) ? null : details.Trim());
 
         Console.WriteLine("Audit log recorded successfully.");
+        Pause();
+    }
+
+    private static void ReportsMenu()
+    {
+        while (true)
+        {
+            Console.Clear();
+            Console.WriteLine("===== HOSPITAL REPORTS =====");
+            Console.WriteLine("1. Total Patients");
+            Console.WriteLine("2. Total Doctors");
+            Console.WriteLine("3. Total Appointments");
+            Console.WriteLine("4. Scheduled Appointments");
+            Console.WriteLine("5. Completed Appointments");
+            Console.WriteLine("6. Total Revenue");
+            Console.WriteLine("7. Outstanding Balance");
+            Console.WriteLine("8. Display All Reports");
+            Console.WriteLine("0. Back to Main Menu");
+            Console.Write("\nEnter your choice: ");
+
+            string? choice = Console.ReadLine();
+
+            try
+            {
+                switch (choice)
+                {
+                    case "1":
+                        Console.WriteLine(
+                            $"Total Patients: {ReportService.GetTotalPatients()}");
+                        Pause();
+                        break;
+
+                    case "2":
+                        Console.WriteLine(
+                            $"Total Doctors: {ReportService.GetTotalDoctors()}");
+                        Pause();
+                        break;
+
+                    case "3":
+                        Console.WriteLine(
+                            $"Total Appointments: {ReportService.GetTotalAppointments()}");
+                        Pause();
+                        break;
+
+                    case "4":
+                        Console.WriteLine(
+                            $"Scheduled Appointments: {ReportService.GetScheduledAppointments()}");
+                        Pause();
+                        break;
+
+                    case "5":
+                        Console.WriteLine(
+                            $"Completed Appointments: {ReportService.GetCompletedAppointments()}");
+                        Pause();
+                        break;
+
+                    case "6":
+                        Console.WriteLine(
+                            $"Total Revenue: {ReportService.GetTotalRevenue():C}");
+                        Pause();
+                        break;
+
+                    case "7":
+                        Console.WriteLine(
+                            $"Outstanding Balance: {ReportService.GetOutstandingBalance():C}");
+                        Pause();
+                        break;
+
+                    case "8":
+                        DisplayAllReports();
+                        break;
+
+                    case "0":
+                        return;
+
+                    default:
+                        Console.WriteLine("Invalid choice.");
+                        Pause();
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+                Pause();
+            }
+        }
+    }
+
+    private static void DisplayAllReports()
+    {
+        Console.WriteLine("\n===== HOSPITAL SUMMARY REPORT =====");
+        Console.WriteLine("----------------------------------");
+
+        Console.WriteLine(
+            $"Total Patients: {ReportService.GetTotalPatients()}");
+
+        Console.WriteLine(
+            $"Total Doctors: {ReportService.GetTotalDoctors()}");
+
+        Console.WriteLine(
+            $"Total Appointments: {ReportService.GetTotalAppointments()}");
+
+        Console.WriteLine(
+            $"Scheduled Appointments: {ReportService.GetScheduledAppointments()}");
+
+        Console.WriteLine(
+            $"Completed Appointments: {ReportService.GetCompletedAppointments()}");
+
+        Console.WriteLine(
+            $"Total Revenue: {ReportService.GetTotalRevenue():C}");
+
+        Console.WriteLine(
+            $"Outstanding Balance: {ReportService.GetOutstandingBalance():C}");
+
         Pause();
     }
 
