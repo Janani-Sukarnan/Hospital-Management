@@ -10,6 +10,8 @@ internal class Program
     private static readonly PatientService PatientService = new();
     private static readonly DoctorService DoctorService = new();
     private static readonly AppointmentService AppointmentService = new();
+    private static readonly MedicalRecordService MedicalRecordService = new();
+    private static readonly BillingService BillingService = new();
     private static void Main()
     {
         while (true)
@@ -53,15 +55,11 @@ internal class Program
                         break;
 
                     case "5":
-                        Console.WriteLine(
-                            "Medical records menu will be connected next.");
-                        Pause();
+                        MedicalRecordMenu();
                         break;
 
                     case "6":
-                        Console.WriteLine(
-                            "Billing menu will be connected next.");
-                        Pause();
+                        BillingMenu();
                         break;
 
                     case "7":
@@ -901,6 +899,339 @@ internal class Program
         Console.WriteLine(success
             ? "Appointment status updated successfully."
             : "Appointment not found or status could not be updated.");
+
+        Pause();
+    }
+
+    private static void MedicalRecordMenu()
+    {
+        while (true)
+        {
+            Console.Clear();
+            Console.WriteLine("===== MEDICAL RECORDS MANAGEMENT =====");
+            Console.WriteLine("1. Display All Medical Records");
+            Console.WriteLine("2. Search Medical Record by ID");
+            Console.WriteLine("3. Add Medical Record");
+            Console.WriteLine("4. Update Medical Record");
+            Console.WriteLine("0. Back to Main Menu");
+            Console.Write("\nEnter your choice: ");
+
+            string? choice = Console.ReadLine();
+
+            try
+            {
+                switch (choice)
+                {
+                    case "1":
+                        DisplayMedicalRecords();
+                        break;
+                    case "2":
+                        SearchMedicalRecord();
+                        break;
+                    case "3":
+                        AddMedicalRecord();
+                        break;
+                    case "4":
+                        UpdateMedicalRecord();
+                        break;
+                    case "0":
+                        return;
+                    default:
+                        Console.WriteLine("Invalid choice.");
+                        Pause();
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+                Pause();
+            }
+        }
+    }
+
+    private static void DisplayMedicalRecords()
+    {
+        List<MedicalRecord> records =
+            MedicalRecordService.GetAllMedicalRecords();
+
+        Console.WriteLine("\nID | Appointment ID | Diagnosis | Follow-up Date");
+        Console.WriteLine("------------------------------------------------");
+
+        foreach (MedicalRecord record in records)
+        {
+            Console.WriteLine(
+                $"{record.MedicalRecordId} | " +
+                $"{record.AppointmentId} | " +
+                $"{record.Diagnosis} | " +
+                $"{record.FollowUpDate?.ToShortDateString() ?? "-"}");
+        }
+
+        if (records.Count == 0)
+            Console.WriteLine("No medical records found.");
+
+        Pause();
+    }
+
+    private static void SearchMedicalRecord()
+    {
+        int id = ReadInt("Enter medical record ID: ");
+
+        MedicalRecord? record =
+            MedicalRecordService.GetMedicalRecordById(id);
+
+        if (record == null)
+        {
+            Console.WriteLine("Medical record not found.");
+        }
+        else
+        {
+            Console.WriteLine($"Record ID: {record.MedicalRecordId}");
+            Console.WriteLine($"Appointment ID: {record.AppointmentId}");
+            Console.WriteLine($"Diagnosis: {record.Diagnosis}");
+            Console.WriteLine($"Treatment: {record.TreatmentNotes ?? "-"}");
+            Console.WriteLine(
+                $"Follow-up: {record.FollowUpDate?.ToShortDateString() ?? "-"}");
+        }
+
+        Pause();
+    }
+
+    private static void AddMedicalRecord()
+    {
+        int appointmentId = ReadInt("Enter completed appointment ID: ");
+
+        Console.Write("Enter diagnosis: ");
+        string diagnosis = Console.ReadLine() ?? "";
+
+        Console.Write("Enter treatment notes (optional): ");
+        string? treatmentNotes = Console.ReadLine();
+
+        Console.Write("Enter follow-up date (yyyy-MM-dd), or leave blank: ");
+        string? followUpInput = Console.ReadLine();
+
+        DateTime? followUpDate = null;
+
+        if (!string.IsNullOrWhiteSpace(followUpInput))
+        {
+            if (!DateTime.TryParse(followUpInput, out DateTime parsedDate))
+            {
+                Console.WriteLine("Invalid follow-up date.");
+                Pause();
+                return;
+            }
+
+            followUpDate = parsedDate;
+        }
+
+        MedicalRecord record = new MedicalRecord
+        {
+            AppointmentId = appointmentId,
+            Diagnosis = diagnosis,
+            TreatmentNotes = string.IsNullOrWhiteSpace(treatmentNotes)
+                ? null
+                : treatmentNotes.Trim(),
+            FollowUpDate = followUpDate
+        };
+
+        int id = MedicalRecordService.AddMedicalRecord(record);
+
+        Console.WriteLine($"Medical record added successfully. ID: {id}");
+        Pause();
+    }
+
+    private static void UpdateMedicalRecord()
+    {
+        int id = ReadInt("Enter medical record ID to update: ");
+
+        MedicalRecord? existing =
+            MedicalRecordService.GetMedicalRecordById(id);
+
+        if (existing == null)
+        {
+            Console.WriteLine("Medical record not found.");
+            Pause();
+            return;
+        }
+
+        Console.Write($"Diagnosis ({existing.Diagnosis}): ");
+        string? diagnosis = Console.ReadLine();
+
+        Console.Write($"Treatment notes ({existing.TreatmentNotes ?? "-"}): ");
+        string? notes = Console.ReadLine();
+
+        Console.Write(
+            $"Follow-up date ({existing.FollowUpDate?.ToString("yyyy-MM-dd") ?? "-"}): ");
+        string? followUpInput = Console.ReadLine();
+
+        DateTime? followUpDate = existing.FollowUpDate;
+
+        if (!string.IsNullOrWhiteSpace(followUpInput))
+        {
+            if (!DateTime.TryParse(followUpInput, out DateTime parsedDate))
+            {
+                Console.WriteLine("Invalid follow-up date.");
+                Pause();
+                return;
+            }
+
+            followUpDate = parsedDate;
+        }
+
+        MedicalRecord updated = new MedicalRecord
+        {
+            MedicalRecordId = id,
+            AppointmentId = existing.AppointmentId,
+            Diagnosis = string.IsNullOrWhiteSpace(diagnosis)
+                ? existing.Diagnosis
+                : diagnosis.Trim(),
+            TreatmentNotes = string.IsNullOrWhiteSpace(notes)
+                ? existing.TreatmentNotes
+                : notes.Trim(),
+            FollowUpDate = followUpDate,
+            CreatedAt = existing.CreatedAt
+        };
+
+        bool success = MedicalRecordService.UpdateMedicalRecord(updated);
+
+        Console.WriteLine(success
+            ? "Medical record updated successfully."
+            : "Medical record could not be updated.");
+
+        Pause();
+    }
+
+    private static void BillingMenu()
+    {
+        while (true)
+        {
+            Console.Clear();
+            Console.WriteLine("===== BILLING MANAGEMENT =====");
+            Console.WriteLine("1. Display All Bills");
+            Console.WriteLine("2. Search Bill by ID");
+            Console.WriteLine("3. Create Bill");
+            Console.WriteLine("4. Cancel Bill");
+            Console.WriteLine("0. Back to Main Menu");
+            Console.Write("\nEnter your choice: ");
+
+            string? choice = Console.ReadLine();
+
+            try
+            {
+                switch (choice)
+                {
+                    case "1":
+                        DisplayBills();
+                        break;
+                    case "2":
+                        SearchBill();
+                        break;
+                    case "3":
+                        CreateBill();
+                        break;
+                    case "4":
+                        CancelBill();
+                        break;
+                    case "0":
+                        return;
+                    default:
+                        Console.WriteLine("Invalid choice.");
+                        Pause();
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+                Pause();
+            }
+        }
+    }
+
+    private static void DisplayBills()
+    {
+        List<Bill> bills = BillingService.GetAllBills();
+
+        Console.WriteLine("\nBill ID | Appointment ID | Amount | Date | Status");
+        Console.WriteLine("--------------------------------------------------");
+
+        foreach (Bill bill in bills)
+        {
+            Console.WriteLine(
+                $"{bill.BillId} | {bill.AppointmentId} | " +
+                $"{bill.TotalAmount:C} | {bill.BillDate:d} | {bill.Status}");
+        }
+
+        if (bills.Count == 0)
+            Console.WriteLine("No bills found.");
+
+        Pause();
+    }
+
+    private static void SearchBill()
+    {
+        int id = ReadInt("Enter bill ID: ");
+
+        Bill? bill = BillingService.GetBillById(id);
+
+        if (bill == null)
+        {
+            Console.WriteLine("Bill not found.");
+        }
+        else
+        {
+            Console.WriteLine($"Bill ID: {bill.BillId}");
+            Console.WriteLine($"Appointment ID: {bill.AppointmentId}");
+            Console.WriteLine($"Total amount: {bill.TotalAmount:C}");
+            Console.WriteLine($"Bill date: {bill.BillDate:d}");
+            Console.WriteLine($"Status: {bill.Status}");
+        }
+
+        Pause();
+    }
+
+    private static void CreateBill()
+    {
+        int appointmentId = ReadInt("Enter completed appointment ID: ");
+
+        decimal amount;
+
+        while (true)
+        {
+            Console.Write("Enter total amount: ");
+
+            if (decimal.TryParse(Console.ReadLine(), out amount) && amount >= 0)
+                break;
+
+            Console.WriteLine("Enter a valid non-negative amount.");
+        }
+
+        int id = BillingService.CreateBill(appointmentId, amount);
+
+        Console.WriteLine($"Bill created successfully. Bill ID: {id}");
+        Pause();
+    }
+
+    private static void CancelBill()
+    {
+        int id = ReadInt("Enter bill ID to cancel: ");
+
+        Console.Write("Confirm cancellation? Enter Y: ");
+        string? confirmation = Console.ReadLine();
+
+        if (!string.Equals(
+            confirmation, "Y", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("Cancellation aborted.");
+            Pause();
+            return;
+        }
+
+        bool success = BillingService.CancelBill(id);
+
+        Console.WriteLine(success
+            ? "Bill cancelled successfully."
+            : "Bill could not be cancelled. Check that it exists and is unpaid.");
 
         Pause();
     }
