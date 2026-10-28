@@ -15,4 +15,3 @@ public class AuditLog
 
     public DateTime CreatedAt { get; set; }
 }
-s

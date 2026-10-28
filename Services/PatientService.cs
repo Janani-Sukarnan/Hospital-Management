@@ -1,9 +1,6 @@
 using HospitalManagementSystem.Models;
 using HospitalManagementSystem.Repositories;
 
-=
-using HospitalManagementSystem.Models;
-using HospitalManagementSystem.Repositories;
 
 namespace HospitalManagementSystem.Services;
 
