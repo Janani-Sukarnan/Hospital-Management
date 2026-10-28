@@ -12,6 +12,8 @@ internal class Program
     private static readonly AppointmentService AppointmentService = new();
     private static readonly MedicalRecordService MedicalRecordService = new();
     private static readonly BillingService BillingService = new();
+    private static readonly PaymentService PaymentService = new();
+    private static readonly AuditLogService AuditLogService = new();
     private static void Main()
     {
         while (true)
@@ -63,15 +65,11 @@ internal class Program
                         break;
 
                     case "7":
-                        Console.WriteLine(
-                            "Payment menu will be connected next.");
-                        Pause();
+                        PaymentMenu();
                         break;
 
                     case "8":
-                        Console.WriteLine(
-                            "Audit log menu will be connected next.");
-                        Pause();
+                        AuditLogMenu();
                         break;
 
                     case "9":
@@ -1233,6 +1231,286 @@ internal class Program
             ? "Bill cancelled successfully."
             : "Bill could not be cancelled. Check that it exists and is unpaid.");
 
+        Pause();
+    }
+
+    private static void PaymentMenu()
+    {
+        while (true)
+        {
+            Console.Clear();
+            Console.WriteLine("===== PAYMENT MANAGEMENT =====");
+            Console.WriteLine("1. Display All Payments");
+            Console.WriteLine("2. Search Payment by ID");
+            Console.WriteLine("3. Display Payments by Bill ID");
+            Console.WriteLine("4. Record Payment");
+            Console.WriteLine("0. Back to Main Menu");
+            Console.Write("\nEnter your choice: ");
+
+            string? choice = Console.ReadLine();
+
+            try
+            {
+                switch (choice)
+                {
+                    case "1":
+                        DisplayPayments();
+                        break;
+                    case "2":
+                        SearchPayment();
+                        break;
+                    case "3":
+                        DisplayPaymentsByBill();
+                        break;
+                    case "4":
+                        RecordPayment();
+                        break;
+                    case "0":
+                        return;
+                    default:
+                        Console.WriteLine("Invalid choice.");
+                        Pause();
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+                Pause();
+            }
+        }
+    }
+
+    private static void DisplayPayments()
+    {
+        List<Payment> payments = PaymentService.GetAllPayments();
+
+        Console.WriteLine("\nPayment ID | Bill ID | Amount | Method | Date");
+        Console.WriteLine("------------------------------------------------");
+
+        foreach (Payment payment in payments)
+        {
+            Console.WriteLine(
+                $"{payment.PaymentId} | {payment.BillId} | " +
+                $"{payment.Amount:C} | {payment.PaymentMethod} | " +
+                $"{payment.PaymentDate:g}");
+        }
+
+        if (payments.Count == 0)
+            Console.WriteLine("No payments found.");
+
+        Pause();
+    }
+
+    private static void SearchPayment()
+    {
+        int id = ReadInt("Enter payment ID: ");
+
+        Payment? payment = PaymentService.GetPaymentById(id);
+
+        if (payment == null)
+        {
+            Console.WriteLine("Payment not found.");
+        }
+        else
+        {
+            Console.WriteLine($"Payment ID: {payment.PaymentId}");
+            Console.WriteLine($"Bill ID: {payment.BillId}");
+            Console.WriteLine($"Amount: {payment.Amount:C}");
+            Console.WriteLine($"Method: {payment.PaymentMethod}");
+            Console.WriteLine($"Payment Date: {payment.PaymentDate:g}");
+            Console.WriteLine(
+                $"Reference Number: {payment.ReferenceNumber ?? "-"}");
+        }
+
+        Pause();
+    }
+
+    private static void DisplayPaymentsByBill()
+    {
+        int billId = ReadInt("Enter bill ID: ");
+
+        List<Payment> payments =
+            PaymentService.GetPaymentsByBillId(billId);
+
+        Console.WriteLine($"\nPayments for Bill ID {billId}");
+
+        foreach (Payment payment in payments)
+        {
+            Console.WriteLine(
+                $"Payment ID: {payment.PaymentId} | " +
+                $"Amount: {payment.Amount:C} | " +
+                $"Method: {payment.PaymentMethod}");
+        }
+
+        if (payments.Count == 0)
+            Console.WriteLine("No payments found for this bill.");
+
+        Pause();
+    }
+
+    private static void RecordPayment()
+    {
+        int billId = ReadInt("Enter bill ID: ");
+
+        decimal amount;
+
+        while (true)
+        {
+            Console.Write("Enter payment amount: ");
+
+            if (decimal.TryParse(Console.ReadLine(), out amount) && amount > 0)
+                break;
+
+            Console.WriteLine("Enter an amount greater than zero.");
+        }
+
+        Console.WriteLine("\nPayment Method");
+        Console.WriteLine("1. Cash");
+        Console.WriteLine("2. Card");
+        Console.WriteLine("3. UPI");
+        Console.WriteLine("4. Bank Transfer");
+        Console.Write("Choose method: ");
+
+        string? method = Console.ReadLine() switch
+        {
+            "1" => "Cash",
+            "2" => "Card",
+            "3" => "UPI",
+            "4" => "BankTransfer",
+            _ => null
+        };
+
+        if (method == null)
+        {
+            Console.WriteLine("Invalid payment method.");
+            Pause();
+            return;
+        }
+
+        Console.Write("Enter reference number (optional): ");
+        string? reference = Console.ReadLine();
+
+        int paymentId = PaymentService.RecordPayment(
+            billId,
+            amount,
+            method,
+            string.IsNullOrWhiteSpace(reference) ? null : reference.Trim());
+
+        Console.WriteLine(
+            $"Payment recorded successfully. Payment ID: {paymentId}");
+
+        Pause();
+    }
+
+    private static void AuditLogMenu()
+    {
+        while (true)
+        {
+            Console.Clear();
+            Console.WriteLine("===== AUDIT LOG MANAGEMENT =====");
+            Console.WriteLine("1. Display All Logs");
+            Console.WriteLine("2. Search Logs by Entity");
+            Console.WriteLine("3. Add Audit Log");
+            Console.WriteLine("0. Back to Main Menu");
+            Console.Write("\nEnter your choice: ");
+
+            string? choice = Console.ReadLine();
+
+            try
+            {
+                switch (choice)
+                {
+                    case "1":
+                        DisplayAuditLogs();
+                        break;
+                    case "2":
+                        SearchAuditLogs();
+                        break;
+                    case "3":
+                        AddAuditLog();
+                        break;
+                    case "0":
+                        return;
+                    default:
+                        Console.WriteLine("Invalid choice.");
+                        Pause();
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error: {ex.Message}");
+                Pause();
+            }
+        }
+    }
+
+    private static void DisplayAuditLogs()
+    {
+        List<AuditLog> logs = AuditLogService.GetAllLogs();
+
+        Console.WriteLine("\nAudit ID | Entity | Entity ID | Action | Date");
+        Console.WriteLine("------------------------------------------------");
+
+        foreach (AuditLog log in logs)
+        {
+            Console.WriteLine(
+                $"{log.AuditId} | {log.EntityName} | " +
+                $"{log.EntityId} | {log.Action} | {log.CreatedAt:g}");
+        }
+
+        if (logs.Count == 0)
+            Console.WriteLine("No audit logs found.");
+
+        Pause();
+    }
+
+    private static void SearchAuditLogs()
+    {
+        Console.Write("Enter entity name (e.g. Patient): ");
+        string entityName = Console.ReadLine() ?? "";
+
+        int entityId = ReadInt("Enter entity ID: ");
+
+        List<AuditLog> logs =
+            AuditLogService.GetLogsByEntity(entityName, entityId);
+
+        foreach (AuditLog log in logs)
+        {
+            Console.WriteLine(
+                $"Audit ID: {log.AuditId} | " +
+                $"Action: {log.Action} | " +
+                $"Details: {log.Details ?? "-"} | " +
+                $"Date: {log.CreatedAt:g}");
+        }
+
+        if (logs.Count == 0)
+            Console.WriteLine("No matching logs found.");
+
+        Pause();
+    }
+
+    private static void AddAuditLog()
+    {
+        Console.Write("Enter entity name: ");
+        string entityName = Console.ReadLine() ?? "";
+
+        int entityId = ReadInt("Enter entity ID: ");
+
+        Console.Write("Enter action (Created/Updated/Deactivated): ");
+        string action = Console.ReadLine() ?? "";
+
+        Console.Write("Enter details (optional): ");
+        string? details = Console.ReadLine();
+
+        AuditLogService.LogAction(
+            entityName,
+            entityId,
+            action,
+            string.IsNullOrWhiteSpace(details) ? null : details.Trim());
+
+        Console.WriteLine("Audit log recorded successfully.");
         Pause();
     }
 
