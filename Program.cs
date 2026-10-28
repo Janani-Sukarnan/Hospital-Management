@@ -9,6 +9,7 @@ internal class Program
     private static readonly DepartmentService DepartmentService = new();
     private static readonly PatientService PatientService = new();
     private static readonly DoctorService DoctorService = new();
+    private static readonly AppointmentService AppointmentService = new();
     private static void Main()
     {
         while (true)
@@ -48,9 +49,7 @@ internal class Program
                         break;
 
                     case "4":
-                        Console.WriteLine(
-                            "Appointment menu will be connected next.");
-                        Pause();
+                        AppointmentMenu();
                         break;
 
                     case "5":
@@ -738,6 +737,174 @@ internal class Program
 
         Pause();
     }
+
+    private static void AppointmentMenu()
+    {
+        while (true)
+        {
+            Console.Clear();
+            Console.WriteLine("===== APPOINTMENT MANAGEMENT =====");
+            Console.WriteLine("1. Display All Appointments");
+            Console.WriteLine("2. Search Appointment by ID");
+            Console.WriteLine("3. Schedule Appointment");
+            Console.WriteLine("4. Update Appointment Status");
+            Console.WriteLine("0. Back to Main Menu");
+            Console.Write("\nEnter your choice: ");
+
+            string? choice = Console.ReadLine();
+
+            try
+            {
+                switch (choice)
+                {
+                    case "1":
+                        DisplayAppointments();
+                        break;
+                    case "2":
+                        SearchAppointment();
+                        break;
+                    case "3":
+                        ScheduleAppointment();
+                        break;
+                    case "4":
+                        UpdateAppointmentStatus();
+                        break;
+                    case "0":
+                        return;
+                    default:
+                        Console.WriteLine("Invalid choice.");
+                        Pause();
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\nError: {ex.Message}");
+                Pause();
+            }
+        }
+    }
+
+    private static void DisplayAppointments()
+    {
+        List<Appointment> appointments =
+            AppointmentService.GetAllAppointments();
+
+        Console.WriteLine("\nID | Patient ID | Doctor ID | Date | Status");
+        Console.WriteLine("--------------------------------------------");
+
+        foreach (Appointment appointment in appointments)
+        {
+            Console.WriteLine(
+                $"{appointment.AppointmentId} | " +
+                $"{appointment.PatientId} | " +
+                $"{appointment.DoctorId} | " +
+                $"{appointment.AppointmentDate:g} | " +
+                $"{appointment.Status}");
+        }
+
+        if (appointments.Count == 0)
+            Console.WriteLine("No appointments found.");
+
+        Pause();
+    }
+
+    private static void SearchAppointment()
+    {
+        int id = ReadInt("Enter appointment ID: ");
+
+        Appointment? appointment =
+            AppointmentService.GetAppointmentById(id);
+
+        if (appointment == null)
+        {
+            Console.WriteLine("Appointment not found.");
+        }
+        else
+        {
+            Console.WriteLine($"Appointment ID: {appointment.AppointmentId}");
+            Console.WriteLine($"Patient ID: {appointment.PatientId}");
+            Console.WriteLine($"Doctor ID: {appointment.DoctorId}");
+            Console.WriteLine($"Date and Time: {appointment.AppointmentDate:g}");
+            Console.WriteLine($"Reason: {appointment.Reason ?? "-"}");
+            Console.WriteLine($"Status: {appointment.Status}");
+        }
+
+        Pause();
+    }
+
+    private static void ScheduleAppointment()
+    {
+        int patientId = ReadInt("Enter patient ID: ");
+        int doctorId = ReadInt("Enter doctor ID: ");
+
+        Console.Write("Enter appointment date and time (e.g. 30-10-2026 10:30 AM): ");
+        string? dateInput = Console.ReadLine();
+
+        if (!DateTime.TryParse(dateInput, out DateTime appointmentDate))
+        {
+            Console.WriteLine("Invalid date or time.");
+            Pause();
+            return;
+        }
+
+        Console.Write("Enter appointment reason (optional): ");
+        string? reason = Console.ReadLine();
+
+        Appointment appointment = new Appointment
+        {
+            PatientId = patientId,
+            DoctorId = doctorId,
+            AppointmentDate = appointmentDate,
+            Reason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim(),
+            Status = "Scheduled"
+        };
+
+        int id = AppointmentService.ScheduleAppointment(appointment);
+
+        Console.WriteLine(
+            $"Appointment scheduled successfully. ID: {id}");
+
+        Pause();
+    }
+
+    private static void UpdateAppointmentStatus()
+    {
+        int id = ReadInt("Enter appointment ID: ");
+
+        Console.WriteLine("\nSelect new status:");
+        Console.WriteLine("1. Completed");
+        Console.WriteLine("2. Cancelled");
+        Console.WriteLine("3. NoShow");
+        Console.Write("Enter your choice: ");
+
+        string? choice = Console.ReadLine();
+
+        string? status = choice switch
+        {
+            "1" => "Completed",
+            "2" => "Cancelled",
+            "3" => "NoShow",
+            _ => null
+        };
+
+        if (status == null)
+        {
+            Console.WriteLine("Invalid status choice.");
+            Pause();
+            return;
+        }
+
+        bool success =
+            AppointmentService.UpdateAppointmentStatus(id, status);
+
+        Console.WriteLine(success
+            ? "Appointment status updated successfully."
+            : "Appointment not found or status could not be updated.");
+
+        Pause();
+    }
+
 
 
     //CREATE DATABASE HospitalDB;
