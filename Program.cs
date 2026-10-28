@@ -7,7 +7,7 @@ namespace HospitalManagementSystem;
 internal class Program
 {
     private static readonly DepartmentService DepartmentService = new();
-
+    private static readonly PatientService PatientService = new();
     private static void Main()
     {
         while (true)
@@ -39,9 +39,7 @@ internal class Program
                         break;
 
                     case "2":
-                        Console.WriteLine(
-                            "Patient menu will be connected next.");
-                        Pause();
+                        PatientMenu();
                         break;
 
                     case "3":
@@ -268,4 +266,246 @@ internal class Program
         Console.WriteLine("\nPress Enter to continue...");
         Console.ReadLine();
     }
+
+    private static void PatientMenu()
+    {
+        while (true)
+        {
+            Console.Clear();
+            Console.WriteLine("===== PATIENT MANAGEMENT =====");
+            Console.WriteLine("1. Display All Patients");
+            Console.WriteLine("2. Search Patient by ID");
+            Console.WriteLine("3. Register New Patient");
+            Console.WriteLine("4. Update Patient");
+            Console.WriteLine("5. Deactivate Patient");
+            Console.WriteLine("0. Back to Main Menu");
+            Console.Write("\nEnter your choice: ");
+
+            string? choice = Console.ReadLine();
+
+            try
+            {
+                switch (choice)
+                {
+                    case "1":
+                        DisplayPatients();
+                        break;
+
+                    case "2":
+                        SearchPatient();
+                        break;
+
+                    case "3":
+                        RegisterPatient();
+                        break;
+
+                    case "4":
+                        UpdatePatient();
+                        break;
+
+                    case "5":
+                        DeactivatePatient();
+                        break;
+
+                    case "0":
+                        return;
+
+                    default:
+                        Console.WriteLine("Invalid choice.");
+                        Pause();
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\nError: {ex.Message}");
+                Pause();
+            }
+        }
+    }
+
+    private static void DisplayPatients()
+    {
+        List<Patient> patients = PatientService.GetAllPatients();
+
+        Console.WriteLine("\nID | Name | DOB | Gender | Phone | Active");
+        Console.WriteLine("-------------------------------------------");
+
+        foreach (Patient patient in patients)
+        {
+            Console.WriteLine(
+                $"{patient.PatientId} | {patient.FullName} | " +
+                $"{patient.DateOfBirth:yyyy-MM-dd} | {patient.Gender} | " +
+                $"{patient.Phone} | {patient.IsActive}");
+        }
+
+        Pause();
+    }
+
+    private static void SearchPatient()
+    {
+        int id = ReadInt("Enter patient ID: ");
+
+        Patient? patient = PatientService.GetPatientById(id);
+
+        if (patient == null)
+        {
+            Console.WriteLine("Patient not found.");
+        }
+        else
+        {
+            Console.WriteLine($"ID: {patient.PatientId}");
+            Console.WriteLine($"Name: {patient.FullName}");
+            Console.WriteLine($"Date of Birth: {patient.DateOfBirth:yyyy-MM-dd}");
+            Console.WriteLine($"Gender: {patient.Gender}");
+            Console.WriteLine($"Phone: {patient.Phone}");
+            Console.WriteLine($"Email: {patient.Email ?? "-"}");
+            Console.WriteLine($"Address: {patient.Address ?? "-"}");
+            Console.WriteLine($"Active: {patient.IsActive}");
+        }
+
+        Pause();
+    }
+
+    private static void RegisterPatient()
+    {
+        Console.Write("Enter full name: ");
+        string name = Console.ReadLine() ?? "";
+
+        DateTime dob;
+        while (true)
+        {
+            Console.Write("Enter date of birth (yyyy-MM-dd): ");
+
+            if (DateTime.TryParseExact(
+                Console.ReadLine(),
+                "yyyy-MM-dd",
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None,
+                out dob))
+                break;
+
+            Console.WriteLine("Invalid date. Use yyyy-MM-dd.");
+        }
+
+        Console.Write("Enter gender (Male/Female/Other/Prefer not to say): ");
+        string gender = Console.ReadLine() ?? "";
+
+        Console.Write("Enter phone: ");
+        string phone = Console.ReadLine() ?? "";
+
+        Console.Write("Enter email (optional): ");
+        string? email = Console.ReadLine();
+
+        Console.Write("Enter address (optional): ");
+        string? address = Console.ReadLine();
+
+        Patient patient = new Patient
+        {
+            FullName = name,
+            DateOfBirth = dob,
+            Gender = gender,
+            Phone = phone,
+            Email = email,
+            Address = address
+        };
+
+        int id = PatientService.RegisterPatient(patient);
+
+        Console.WriteLine($"Patient registered successfully. ID: {id}");
+        Pause();
+    }
+
+    private static void UpdatePatient()
+    {
+        int id = ReadInt("Enter patient ID to update: ");
+
+        Patient? existing = PatientService.GetPatientById(id);
+
+        if (existing == null)
+        {
+            Console.WriteLine("Patient not found.");
+            Pause();
+            return;
+        }
+
+        Console.Write($"Enter full name ({existing.FullName}): ");
+        string? name = Console.ReadLine();
+
+        Console.Write($"Enter date of birth yyyy-MM-dd ({existing.DateOfBirth:yyyy-MM-dd}): ");
+        string? dobInput = Console.ReadLine();
+
+        DateTime dob = existing.DateOfBirth;
+
+        if (!string.IsNullOrWhiteSpace(dobInput) &&
+            !DateTime.TryParseExact(
+                dobInput,
+                "yyyy-MM-dd",
+                System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None,
+                out dob))
+        {
+            Console.WriteLine("Invalid date format.");
+            Pause();
+            return;
+        }
+
+        Console.Write($"Enter gender ({existing.Gender}): ");
+        string? gender = Console.ReadLine();
+
+        Console.Write($"Enter phone ({existing.Phone}): ");
+        string? phone = Console.ReadLine();
+
+        Console.Write($"Enter email ({existing.Email ?? "-"}): ");
+        string? email = Console.ReadLine();
+
+        Console.Write($"Enter address ({existing.Address ?? "-"}): ");
+        string? address = Console.ReadLine();
+
+        Patient updated = new Patient
+        {
+            PatientId = id,
+            FullName = string.IsNullOrWhiteSpace(name) ? existing.FullName : name,
+            DateOfBirth = dob,
+            Gender = string.IsNullOrWhiteSpace(gender) ? existing.Gender : gender,
+            Phone = string.IsNullOrWhiteSpace(phone) ? existing.Phone : phone,
+            Email = string.IsNullOrWhiteSpace(email) ? existing.Email : email,
+            Address = string.IsNullOrWhiteSpace(address) ? existing.Address : address,
+            IsActive = existing.IsActive,
+            RegisteredAt = existing.RegisteredAt
+        };
+
+        bool success = PatientService.UpdatePatient(updated);
+
+        Console.WriteLine(success
+            ? "Patient updated successfully."
+            : "Patient could not be updated.");
+
+        Pause();
+    }
+
+    private static void DeactivatePatient()
+    {
+        int id = ReadInt("Enter patient ID to deactivate: ");
+
+        Console.Write("Are you sure? Enter Y to confirm: ");
+        string? confirmation = Console.ReadLine();
+
+        if (!string.Equals(
+            confirmation, "Y", StringComparison.OrdinalIgnoreCase))
+        {
+            Console.WriteLine("Deactivation cancelled.");
+            Pause();
+            return;
+        }
+
+        bool success = PatientService.DeactivatePatient(id);
+
+        Console.WriteLine(success
+            ? "Patient deactivated successfully."
+            : "Patient not found or already inactive.");
+
+        Pause();
+    }
+
 }
